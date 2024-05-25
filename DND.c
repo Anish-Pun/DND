@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "json.h"
 
-// Define your data structures here
 struct item
 {
     char name[50]; // [50] is the maximum length of the name
@@ -25,25 +23,67 @@ struct inventory
     int num_items;
     struct coin money;
 };
-void add_item(struct inventory *inv, struct item new_item);
+
+struct node
 {
-    if (inv->num_items < 100)
+    struct item data;
+    struct node *next;
+};
+
+void push(struct node** head_ref, struct item new_item)
+{
+    struct node *new_node = (struct node*)malloc(sizeof(struct node));
+    if (new_node == NULL)
     {
-        inv->items[inv->num_items++] = new_item;
+        printf("Memory allocation failed.\n");
+        return;
     }
-    else
+    new_node->data = new_item;
+    new_node->next = *head_ref;
+    *head_ref = new_node;
+};
+
+void pop(struct node** head_ref) 
+{
+    if (*head_ref == NULL)
     {
-        printf("Inventory is full\n");
-    } 
+        printf("Inventory is empty.\n");
+        return;
+    }
+    struct node *temp = *head_ref;
+    *head_ref = (*head_ref)->next;
+    free(temp);
 }
 
-void print_item(struct item i)
+void cycle(struct node* head)
 {
-    printf("Item: %s\n", i.name);
-    printf("Weight: %.2f\n", i.weight);
-    printf("Quantity: %d\n", i.quantity);
+    if( head == NULL)
+    {
+        printf("Inventory is empty\n");
+        return;
+    }
+    struct node *current = head;
+    do
+    {
+        printf("Item: %s\n", current->data.name);
+        printf("Weight: %.2f\n", current->data.weight);
+        printf("Quantity: %d\n", current->data.quantity);
+        current = current->next;
+    } while (current != head);
+}
 
-    printf("inventory: %s\n");
+void usage()
+{
+    printf("Usage:              Inventory.exe equipment-files [number-of-items] [-w max-weight] [-m money] [-c camp-file]\n");
+    printf("Options:\n");
+    printf("Number of items     Optional per file to define the number in the inventory\n");
+    printf("-w max-weight       Maximum weight before becoming encumbered\n");
+    printf("-m money            List of coins and types (cp, sp, ep, gp, pp)\n");
+    printf("-c camp-file        Optional camp file for all discovered items during play that stay in camp\n");
+}
+
+void parse_json(const char *)
+{
 
 }
 
@@ -54,36 +94,6 @@ int main(int argc, char *argv[])
         usage();
         return 1;
     }
-/*
-    struct inventory player_inventory;
-    player_inventory.num_items = 0;
-    for(int i = 0; i < argc; i++){
-        if(strcmp(argv[i], "-w") == 0){
-            player_inventory.max_weight = atof(argv[i+1]);
-        }
-        else if(strcmp(argv[i], "-m") == 0){
-            player_inventory.money.cp = atoi(argv[i+1]);
-            player_inventory.money.sp = atoi(argv[i+2]);
-            player_inventory.money.ep = atoi(argv[i+3]);
-            player_inventory.money.gp = atoi(argv[i+4]);
-            player_inventory.money.pp = atoi(argv[i+5]);
-        }
-        else if(strcmp(argv[i], "-c") == 0){
-            player_inventory.camp_file = argv[i+1];
-        }
-        else{
-            player_inventory.num_items = atoi(argv[i]);
-        }
-    }
-*/
+
     return 0;
-}
-void usage()
-{
-    printf("Usage:              Inventory.exe equipment-files [number-of-items] [-w max-weight] [-m money] [-c camp-file]\n");
-    printf("Options:\n");
-    printf("Number of items     Optional per file to define the number in the inventory\n");
-    printf("-w max-weight       Maximum weight before becoming encumbered\n");
-    printf("-m money            List of coins and types (cp, sp, ep, gp, pp)\n");
-    printf("-c camp-file        Optional camp file for all discovered items during play that stay in camp\n");
 }

@@ -12,12 +12,10 @@ Options:
  
 Example: Inventory.exe -w 180.75 -m 4gp 42sp 69cp greatsword.json explorers-pack.json small-knife.json 2 waterskin.json leather-armor.json -c camp.log
 
-
 Na het inladen van de equipment (cards) kan een speler circulair door de lijst met objecten stappen en bij elk object detail informatie opvragen indien gewenst en/of verplaatsen naar camp. Steeds wordt de totale waarde inclusief coins berekend en weergegeven en het totaal gewicht berekend en aangegeven of de speler emcumbered is.
 
-
-
 JSON-files zijn te downloaden via https://www.dnd5eapi.co/api/equipment en afgeleiden.
+
 ## Functions
 - Gebruiken van juiste structuren
 - De gegevens worden juist bewaard in de juiste members van de structuren
