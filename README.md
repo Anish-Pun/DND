@@ -37,3 +37,4 @@ JSON-files zijn te downloaden via https://www.dnd5eapi.co/api/equipment en afgel
 - correcte documentatie a.d.h.v. flowchart (zie miro)
 - getopt() gebruiken
 - url meegeven en inladen via netwerk-code
+
