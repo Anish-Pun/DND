@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
         usage();
         return 1;
     }
+    struct inventory inv;
 
     return 0;
 }
