@@ -133,7 +133,7 @@ void push(struct node** head_ref, struct item new_item)
 }
 
 // Function to load equipment from a JSON file
-void load_equipment_file(const char *filename, struct inventory *inv) {
+void load_equipment(const char *filename, struct inventory *inv) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Failed to open file: %s\n", filename);
@@ -170,7 +170,7 @@ void load_equipment_file(const char *filename, struct inventory *inv) {
     inv->num_items++;
 }
 
-void parse_command_line(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv) {
+void parse(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv) {
     int arg_index = 1;
     while (arg_index < argc) {
         if (strcmp(argv[arg_index], "-w") == 0) {
@@ -210,7 +210,7 @@ void parse_command_line(int argc, char *argv[], float *max_weight, struct coin *
                 printf("Error: Number of items not specified.\n");
                 exit(1);
             }
-            load_equipment_file(argv[arg_index], inv);
+            load_equipment(argv[arg_index], inv);
             (*num_items)--;
             arg_index++;
         }
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
     inv.num_items = 0;
     struct node *head = NULL;
     // Argumenten parsen en equipment bestanden laden
-    parse_command_line(argc, argv, &max_weight, &money, &camp_file, &num_items, &inv);
+    parse(argc, argv, &max_weight, &money, &camp_file, &num_items, &inv);
 
     // Menu voor interactie met de inventory
     int choice;
