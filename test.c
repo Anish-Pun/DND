@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 
-// Structuren voor items, munten, inventory en nodes
 struct item
 {
     char name[50];
@@ -33,6 +32,134 @@ struct node
     struct node *next;
 };
 
+void add_item(struct inventory *inv, struct item *new_item);
+float calculate_total_weight(struct inventory *inv);
+void print_inventory(struct inventory *inv, float max_weight);
+void cycle(struct node* head);
+void pop(struct node** head_ref);
+void push(struct node** head_ref, struct item new_item);
+void load_equipment(const char *filename, struct inventory *inv);
+void parse(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv);
+void save_camp(const char *camp_file, struct node *head);
+void transfer_to_inventory(struct node **head, struct inventory *inv, int index);
+void camplog(const char *camp_file, struct node **head);
+
+int main(int argc, char *argv[])
+{
+    float max_weight = 0.0;
+    struct coin money = {0, 0, 0, 0, 0};
+    char *camp_file = NULL;
+    int num_items = 0;
+
+    // Aanmaken van de inventory en linked list
+    struct inventory inv;
+    inv.num_items = 0;
+    struct node *head = NULL;
+
+    // Argumenten parsen en equipment bestanden laden
+    parse(argc, argv, &max_weight, &money, &camp_file, &num_items, &inv);
+
+    // Load camp items from file
+    if (camp_file) {
+        camplog(camp_file, &head);
+    }
+
+    // Menu voor interactie met de inventory
+    int choice;
+    do {
+        printf("+-------------------------------+\n");
+        printf("|      Inventory Menu:          |\n");
+        printf("| 1. View inventory             |\n");
+        printf("| 2. View details of an item    |\n");
+        printf("| 3. Move item to camp          |\n");
+        printf("| 4. View camp items            |\n");
+        printf("| 5. Take item from camp        |\n");
+        printf("| 6. Exit                       |\n");
+        printf("+-------------------------------+\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                print_inventory(&inv, max_weight);
+                break;
+            case 2:
+                if (inv.num_items == 0) {
+                    printf("Inventory is empty.\n");
+                } else {
+                    printf("Enter the index of the item you want to view (1-%d): ", inv.num_items);
+                    int index;
+                    scanf("%d", &index);
+                    if (index < 1 || index > inv.num_items) {
+                        printf("Invalid index.\n");
+                    } else {
+                        printf("Item: %s\n", inv.items[index - 1].name);
+                        printf("Weight: %.2f\n", inv.items[index - 1].weight);
+                        printf("Quantity: %d\n", inv.items[index - 1].quantity);
+                    }
+                }
+                break;
+            case 3:
+                if (inv.num_items == 0) {
+                    printf("Inventory is empty.\n");
+                } else {
+                    printf("Enter the index of the item you want to move to camp (1-%d): ", inv.num_items);
+                    int index;
+                    scanf("%d", &index);
+                    if (index < 1 || index > inv.num_items) {
+                        printf("Invalid index.\n");
+                    } else {
+                        // Voeg het item toe aan het kamp
+                        push(&head, inv.items[index - 1]);
+                        // Verwijder het item uit de inventory
+                        for (int i = index - 1; i < inv.num_items - 1; i++) {
+                            inv.items[i] = inv.items[i + 1];
+                        }
+                        inv.num_items--;
+                        printf("Item moved to camp.\n");
+
+                        // Save camp items to file
+                        if (camp_file) {
+                            save_camp(camp_file, head);
+                        }
+                    }
+                }
+                break;
+            case 4:
+                cycle(head);
+                break;
+            case 5:
+                if (head == NULL) {
+                    printf("Camp is empty.\n");
+                } else {
+                    printf("Enter the index of the item you want to take from camp: ");
+                    int index;
+                    scanf("%d", &index);
+                    transfer_to_inventory(&head, &inv, index);
+
+                    // Save camp items to file
+                    if (camp_file) {
+                        save_camp(camp_file, head);
+                    }
+                }
+                break;
+            case 6:
+                printf("Exiting...\n");
+                break;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+        }
+    } while (choice != 6);
+
+    // Geheugen vrijmaken na gebruik
+    while (head != NULL) {
+        pop(&head);
+    }
+
+    return 0;
+}
+
 // Functie om een nieuw item toe te voegen aan de inventory
 void add_item(struct inventory *inv, struct item *new_item) {
     if (inv->num_items < 100) {
@@ -56,7 +183,6 @@ float calculate_total_weight(struct inventory *inv) {
     }
     return total_weight;
 }
-
 // Functie om de inventory en totaal gewicht weer te geven
 void print_inventory(struct inventory *inv, float max_weight) {
     printf("Inventory:\n");
@@ -69,8 +195,7 @@ void print_inventory(struct inventory *inv, float max_weight) {
         printf("You are encumbered!\n");
     }
 }
-
-// Functie om de inventory rond te gaan
+// Function to display items
 void cycle(struct node* head)
 {
     if( head == NULL)
@@ -87,7 +212,7 @@ void cycle(struct node* head)
         current = current->next;
     } while (current != head);
 }
-
+// Function to remove items
 void pop(struct node** head_ref) 
 {
     if (*head_ref == NULL)
@@ -108,8 +233,7 @@ void pop(struct node** head_ref)
     }
     free(temp);
 }
-
-// Functie om een nieuw item aan de linked list toe te voegen
+// Function to add items
 void push(struct node** head_ref, struct item new_item)
 {
     struct node *new_node = (struct node*)malloc(sizeof(struct node));
@@ -131,7 +255,6 @@ void push(struct node** head_ref, struct item new_item)
         new_node->next = *head_ref;
     }
 }
-
 // Function to load equipment from a JSON file
 void load_equipment(const char *filename, struct inventory *inv) {
     FILE *file = fopen(filename, "r");
@@ -169,7 +292,7 @@ void load_equipment(const char *filename, struct inventory *inv) {
 
     inv->num_items++;
 }
-
+//fuck knows ( SPENT MORE THAN 6 HRS JUST TO USE AI IN THE END)
 void parse(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv) {
     int arg_index = 1;
     while (arg_index < argc) {
@@ -239,6 +362,7 @@ void save_camp(const char *camp_file, struct node *head) {
     }
     fclose(file);
 }
+// Function to transfer an item from camp to inventory
 void transfer_to_inventory(struct node **head, struct inventory *inv, int index) {
     if (index < 1) {
         printf("Invalid index.\n");
@@ -275,21 +399,8 @@ void transfer_to_inventory(struct node **head, struct inventory *inv, int index)
 
     printf("Invalid index.\n");
 }
-void print_camp(struct node *head) {
-    if (head == NULL) {
-        printf("Camp is empty.\n");
-        return;
-    }
-    
-    struct node *current = head;
-    printf("Camp:\n");
-    do {
-        printf("  Item: %s, Weight: %.2f, Quantity: %d\n", current->data.name, current->data.weight, current->data.quantity);
-        current = current->next;
-    } while (current != head);
-}
 // Function to load camp items from a file
-void load_camp(const char *camp_file, struct node **head) {
+void camplog(const char *camp_file, struct node **head) {
     FILE *file = fopen(camp_file, "r");
     if (!file) {
         printf("Camp file not found: %s\n", camp_file);
@@ -302,121 +413,4 @@ void load_camp(const char *camp_file, struct node **head) {
         push(head, new_item);
     }
     fclose(file);
-}
-
-// Hoofdprogramma
-int main(int argc, char *argv[])
-{
-    float max_weight = 0.0;
-    struct coin money = {0, 0, 0, 0, 0};
-    char *camp_file = NULL;
-    int num_items = 0;
-
-    // Aanmaken van de inventory en linked list
-    struct inventory inv;
-    inv.num_items = 0;
-    struct node *head = NULL;
-
-    // Argumenten parsen en equipment bestanden laden
-    parse(argc, argv, &max_weight, &money, &camp_file, &num_items, &inv);
-
-    // Load camp items from file
-    if (camp_file) {
-        load_camp(camp_file, &head);
-    }
-
-    // Menu voor interactie met de inventory
-    int choice;
-    do {
-        printf("+-------------------------------+\n");
-        printf("|      Inventory Menu:          |\n");
-        printf("| 1. View inventory             |\n");
-        printf("| 2. View details of an item    |\n");
-        printf("| 3. Move item to camp          |\n");
-        printf("| 4. View camp items            |\n");
-        printf("| 5. Take item from camp        |\n");
-        printf("| 6. Exit                       |\n");
-        printf("+-------------------------------+\n");
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
-
-        switch (choice) {
-            case 1:
-                print_inventory(&inv, max_weight);
-                break;
-            case 2:
-                if (inv.num_items == 0) {
-                    printf("Inventory is empty.\n");
-                } else {
-                    printf("Enter the index of the item you want to view (1-%d): ", inv.num_items);
-                    int index;
-                    scanf("%d", &index);
-                    if (index < 1 || index > inv.num_items) {
-                        printf("Invalid index.\n");
-                    } else {
-                        printf("Item: %s\n", inv.items[index - 1].name);
-                        printf("Weight: %.2f\n", inv.items[index - 1].weight);
-                        printf("Quantity: %d\n", inv.items[index - 1].quantity);
-                    }
-                }
-                break;
-            case 3:
-                if (inv.num_items == 0) {
-                    printf("Inventory is empty.\n");
-                } else {
-                    printf("Enter the index of the item you want to move to camp (1-%d): ", inv.num_items);
-                    int index;
-                    scanf("%d", &index);
-                    if (index < 1 || index > inv.num_items) {
-                        printf("Invalid index.\n");
-                    } else {
-                        // Voeg het item toe aan het kamp
-                        push(&head, inv.items[index - 1]);
-                        // Verwijder het item uit de inventory
-                        for (int i = index - 1; i < inv.num_items - 1; i++) {
-                            inv.items[i] = inv.items[i + 1];
-                        }
-                        inv.num_items--;
-                        printf("Item moved to camp.\n");
-
-                        // Save camp items to file
-                        if (camp_file) {
-                            save_camp(camp_file, head);
-                        }
-                    }
-                }
-                break;
-            case 4:
-                print_camp(head);
-                break;
-            case 5:
-                if (head == NULL) {
-                    printf("Camp is empty.\n");
-                } else {
-                    printf("Enter the index of the item you want to take from camp: ");
-                    int index;
-                    scanf("%d", &index);
-                    transfer_to_inventory(&head, &inv, index);
-
-                    // Save camp items to file
-                    if (camp_file) {
-                        save_camp(camp_file, head);
-                    }
-                }
-                break;
-            case 6:
-                printf("Exiting...\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
-                break;
-        }
-    } while (choice != 6);
-
-    // Geheugen vrijmaken na gebruik
-    while (head != NULL) {
-        pop(&head);
-    }
-
-    return 0;
 }
