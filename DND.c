@@ -38,7 +38,7 @@ void print_inventory(struct inventory *inv, float max_weight);
 void cycle(struct node* head);
 void pop(struct node** head_ref);
 void push(struct node** head_ref, struct item new_item);
-void load_equipment(const char *filename, struct inventory *inv);
+void load_equipment(const char *filename, struct inventory *inv, int quantity);
 void parse(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv);
 void save_camp(const char *camp_file, struct node *head);
 void transfer_to_inventory(struct node **head, struct inventory *inv, int index);
@@ -51,20 +51,17 @@ int main(int argc, char *argv[])
     char *camp_file = NULL;
     int num_items = 0;
 
-    // Aanmaken van de inventory en linked list
     struct inventory inv;
     inv.num_items = 0;
     struct node *head = NULL;
 
-    // Argumenten parsen en equipment bestanden laden
     parse(argc, argv, &max_weight, &money, &camp_file, &num_items, &inv);
 
-    // Load camp items from file
+    // show camp items
     if (camp_file) {
         camplog(camp_file, &head);
     }
 
-    // Menu voor interactie met de inventory
     int choice;
     do {
         printf("+-------------------------------+\n");
@@ -109,16 +106,14 @@ int main(int argc, char *argv[])
                     if (index < 1 || index > inv.num_items) {
                         printf("Invalid index.\n");
                     } else {
-                        // Voeg het item toe aan het kamp
                         push(&head, inv.items[index - 1]);
-                        // Verwijder het item uit de inventory
                         for (int i = index - 1; i < inv.num_items - 1; i++) {
                             inv.items[i] = inv.items[i + 1];
                         }
                         inv.num_items--;
                         printf("Item moved to camp.\n");
 
-                        // Save camp items to file
+                        // camp items into the file
                         if (camp_file) {
                             save_camp(camp_file, head);
                         }
@@ -137,7 +132,7 @@ int main(int argc, char *argv[])
                     scanf("%d", &index);
                     transfer_to_inventory(&head, &inv, index);
 
-                    // Save camp items to file
+                    // camp items into the file
                     if (camp_file) {
                         save_camp(camp_file, head);
                     }
@@ -152,7 +147,7 @@ int main(int argc, char *argv[])
         }
     } while (choice != 6);
 
-    // Geheugen vrijmaken na gebruik
+    // Free memory allocated
     while (head != NULL) {
         pop(&head);
     }
@@ -160,22 +155,19 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// Functie om een nieuw item toe te voegen aan de inventory
+// Function to add items to the inventory
 void add_item(struct inventory *inv, struct item *new_item) {
     if (inv->num_items < 100) {
-        // Allocate memory for the new item
         struct item *item_ptr = &(inv->items[inv->num_items]);
-        // Copy the contents of new_item to the allocated memory
         strcpy(item_ptr->name, new_item->name);
         item_ptr->weight = new_item->weight;
         item_ptr->quantity = new_item->quantity;
-        // Increment the number of items in the inventory
         inv->num_items++;
     } else {
         printf("Inventory is full.\n");
     }
 }
-// Functie om de totale gewicht van de inventory te berekenen
+// Function for total weight
 float calculate_total_weight(struct inventory *inv) {
     float total_weight = 0;
     for (int i = 0; i < inv->num_items; i++) {
@@ -256,7 +248,7 @@ void push(struct node** head_ref, struct item new_item)
     }
 }
 // Function to load equipment from a JSON file
-void load_equipment(const char *filename, struct inventory *inv) {
+void load_equipment(const char *filename, struct inventory *inv, int quantity) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Failed to open file: %s\n", filename);
@@ -290,9 +282,10 @@ void load_equipment(const char *filename, struct inventory *inv) {
     }
     sscanf(ptr, "\"quantity\":%d", &inv->items[inv->num_items].quantity);
 
+    inv->items[inv->num_items].quantity = quantity;
     inv->num_items++;
 }
-//
+//parsing cmmd line
 void parse(int argc, char *argv[], float *max_weight, struct coin *money, char **camp_file, int *num_items, struct inventory *inv) {
     int arg_index = 1;
     while (arg_index < argc) {
@@ -333,7 +326,7 @@ void parse(int argc, char *argv[], float *max_weight, struct coin *money, char *
                 printf("Error: Number of items not specified.\n");
                 exit(1);
             }
-            load_equipment(argv[arg_index], inv);
+            load_equipment(argv[arg_index], inv, *num_items);;
             (*num_items)--;
             arg_index++;
         }
@@ -375,11 +368,10 @@ void transfer_to_inventory(struct node **head, struct inventory *inv, int index)
 
     do {
         if (i == index) {
-            // Add the item to the inventory
             add_item(inv, &current->data);
 
             // Remove the item from the camp
-            if (prev == NULL) { // This means head is the item to remove
+            if (prev == NULL) { 
                 pop(head);
             } else {
                 prev->next = current->next;
